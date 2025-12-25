@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Winnipeg Transit Fleet</title>
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0/build/three.module.min.js"
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/epoxy-tls-polyfill@1/dist/javascript.min.js"></script>
+    <style>
+        * {
+            font-family: brandon-grotesque, sans-serif;
+            font-weight: 400;
+            font-style: normal;
+            touch-action: manipulation;
+            margin: 0px;
+            padding: 0px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+            border: none;
+        }
+
+        body {
+            overflow-x: hidden;
+            overflow-y: scroll;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        body::-webkit-scrollbar {
+            width: 0;
+            height: 0;
+        }
+
+        canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        main {
+            color: white;
+            position: absolute;
+            width: 100%;
+            margin: 0px auto;
+            padding: 100px 0px 50dvh;
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-template-rows: calc(900px + 50dvh);
+            grid-auto-rows: 2000px;
+        }
+
+        main>* {
+            background: rgba(15, 15, 15, 0.95);
+            line-height: 1.5;
+            counter-increment: section-number;
+            top: calc(counter(section-number) * 20px);
+            max-height: fit-content;
+            text-align: center;
+        }
+
+        header {
+            background: rgba(15, 15, 15, 0.90);
+            grid-column: 3 / 11;
+            padding: 40px;
+            border-radius: 20px;
+        }
+
+        section {
+            background: rgba(15, 15, 15, 0.90);
+            line-height: 1.5;
+            align-self: center;
+            padding: 20px;
+            border-radius: 10px;
+        }
+
+        h1 {
+            font-size: 64px;
+            font-weight: bold;
+        }
+
+        h2 {
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        section, p {
+            font-size: 20px;
+        }
+
+        a, strong {
+            color: #00ffff;
+            font-weight: bold;
+        }
+
+        main section:nth-of-type(odd) {
+            grid-column: 2 / 8;
+        }
+
+        main section:nth-of-type(even) {
+            grid-column: 6 / 12;
+        }
+    </style>
+</head>
+<body>
+    <main>
+        <header>
+            <h1>Winnipeg Transit Fleet</h1>
+            <p>Home of and exclusively using New Flyer buses 🔥</p>
+            <p>Data from the <a href="https://cptdb.ca/wiki/index.php/Winnipeg_Transit">CPTDB Wiki</a></p>
+            <p id="loading"><strong>Loading...</strong></p>
+        </header>
+    </main>
+    <canvas id="bg"></canvas>
+    <script type="module">
+        import * as THREE from 'three';
+
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
+
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+
+        const renderer = new THREE.WebGLRenderer({
+            canvas: document.querySelector('#bg'),
+        });
+
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setAnimationLoop(animate);
+
+        renderer.render(scene, camera);
+
+        document.body.appendChild(renderer.domElement);
+
+        const geometry = new THREE.BoxGeometry(1, 1, 1);
+        const texture = new THREE.TextureLoader().load('wt_295.jpg')
+        const material = new THREE.MeshBasicMaterial({ map: texture });
+        const cube = new THREE.Mesh(geometry, material);
+        scene.add(cube);
+
+        const donut_geo = new THREE.TorusGeometry(10, 3, 16, 100);
+        const donut_tex = new THREE.MeshBasicMaterial({ color: 0xffffff });
+        const donut = new THREE.Mesh(donut_geo, donut_tex);
+        scene.add(donut);
+
+        function moveCamera() {
+            const t = -100 - Math.abs((document.body.getBoundingClientRect().top) % 2000 + 1000);
+
+            cube.rotation.y += 0.01;
+            cube.rotation.z += 0.01;
+
+            camera.position.z = t * -0.01;
+            camera.position.x = t * -0.0000;
+            camera.rotation.y = t * -0.0000;
+        }
+
+        window.addEventListener('scroll', moveCamera);
+        moveCamera();
+        window.addEventListener('resize', () => {
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+        })
+
+        function animate() {
+            donut.rotation.x += 0.01;
+            donut.rotation.y += 0.01;
+
+            renderer.render(scene, camera);
+        }
+
+        function add_star() {
+            const star_geometry = new THREE.SphereGeometry(0.25, 24, 24);
+            const star_material = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const star = new THREE.Mesh(star_geometry, star_material);
+
+            const [x, y, z] = Array(3).fill().map(() => THREE.MathUtils.randFloatSpread(200));
+
+            star.position.set(x, y, z);
+            scene.add(star);
+        }
+
+        Array(200).fill().forEach(add_star);
+
+        animate();
+        scrollTo(0, 0);
+
+        const wikiPage = await fetch('https://cptdb.ca/wiki/api.php?action=parse&page=Winnipeg_Transit&prop=text&format=json');
+        const wikiHtml = new DOMParser().parseFromString((await wikiPage.json()).parse.text['*'], 'text/html');
+        let fleetTable = [...wikiHtml.getElementsByTagName('th')].filter((el) => el.textContent.trim().toLowerCase() === "fleet number")[0]
+        while (fleetTable.tagName !== 'TABLE') {
+            fleetTable = fleetTable.parentElement;
+        }
+        const mainEl = document.getElementsByTagName('main')[0];
+        let header;
+        [...fleetTable.getElementsByTagName('tr')].forEach((tr, i) => {
+            if (i === 0) {
+                header = [...tr.getElementsByTagName('th')].map((th) => th.textContent.trim());
+                return;
+            }
+            const section = document.createElement('section');
+            let html = `<h2>${tr.getElementsByTagName('td')[0].textContent.trim()}</h2>`;
+            [...tr.getElementsByTagName('td')].forEach((td, j) => {
+                html += `<p><strong>${header[j]}:</strong> ${td?.textContent.trim() || 'N/A'}</p>`;
+            });
+            section.innerHTML = html;
+            mainEl.appendChild(section);
+        });
+        document.getElementById('loading').remove();
+        scrollTo(0, 0);
+    </script>
+</body>
+</html>
