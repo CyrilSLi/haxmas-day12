@@ -195,7 +195,7 @@
 
         const wikiPage = await fetch('https://cptdb.ca/wiki/api.php?action=parse&page=Winnipeg_Transit&prop=text&format=json');
         const wikiHtml = new DOMParser().parseFromString((await wikiPage.json()).parse.text['*'], 'text/html');
-        let fleetTable = [...wikiHtml.getElementsByTagName('th')].filter((el) => el.textContent.trim().toLowerCase() === "fleet number")[0]
+        let fleetTable = [...wikiHtml.getElementsByTagName('th')].filter((el) => el.textContent.trim().toLowerCase() === "fleet number")[0];
         while (fleetTable.tagName !== 'TABLE') {
             fleetTable = fleetTable.parentElement;
         }
