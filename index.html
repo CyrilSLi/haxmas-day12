@@ -57,18 +57,17 @@
             grid-auto-rows: 2000px;
         }
 
-        main>* {
+        main > * {
             background: rgba(15, 15, 15, 0.95);
             line-height: 1.5;
-            counter-increment: section-number;
-            top: calc(counter(section-number) * 20px);
-            max-height: fit-content;
+            height: fit-content;
             text-align: center;
+            overflow-wrap: break-word;
         }
 
         header {
             background: rgba(15, 15, 15, 0.90);
-            grid-column: 3 / 11;
+            grid-column: 2 / 12;
             padding: 40px;
             border-radius: 20px;
         }
@@ -82,7 +81,7 @@
         }
 
         h1 {
-            font-size: 64px;
+            font-size: 48px;
             font-weight: bold;
         }
 
